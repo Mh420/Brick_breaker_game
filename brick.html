@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced 3D Brick Breaker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 150, 255, 0.5);
+            border: 1px solid rgba(0, 150, 255, 0.3);
+        }
+        
+        #ui h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #4cc9f0;
+            text-align: center;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .stat {
+            margin: 0 10px;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            color: #f72585;
+        }
+        
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 10px;
+            margin: 0 20px;
+            border: 1px solid rgba(0, 150, 255, 0.3);
+        }
+        
+        #instructions p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        
+        .power-up {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin: 0 5px;
+        }
+        
+        .power-up.paddle { background: #4cc9f0; }
+        .power-up.ball { background: #f72585; }
+        .power-up.multi { background: #b5179e; }
+        
+        #startScreen, #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+        
+        #gameOverScreen {
+            display: none;
+        }
+        
+        .screen-content {
+            text-align: center;
+            max-width: 500px;
+            padding: 30px;
+            background: rgba(22, 33, 62, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(76, 201, 240, 0.5);
+            border: 2px solid rgba(76, 201, 240, 0.5);
+        }
+        
+        .screen-content h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #4cc9f0;
+        }
+        
+        .screen-content p {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(135deg, #4895ef 0%, #4361ee 100%);
+        }
+        
+        .highlight {
+            color: #f72585;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="ui">
+            <h1>3D BRICK BREAKER</h1>
+            <div class="stats">
+                <div class="stat">SCORE: <span id="scoreValue" class="stat-value">0</span></div>
+                <div class="stat">LIVES: <span id="livesValue" class="stat-value">3</span></div>
+                <div class="stat">LEVEL: <span id="levelValue" class="stat-value">1</span></div>
+            </div>
+            <div class="stats">
+                <div class="stat">BALLS: <span id="ballsValue" class="stat-value">1</span></div>
+                <div class="stat">PADDLE: <span id="paddleSize" class="stat-value">NORMAL</span></div>
+            </div>
+        </div>
+        
+        <div id="instructions">
+            <p>Use <span class="highlight">MOUSE</span> or <span class="highlight">LEFT/RIGHT ARROWS</span> to move the paddle</p>
+            <p>Collect power-ups: 
+                <span class="power-up paddle"></span> Paddle Size 
+                <span class="power-up ball"></span> Ball Speed 
+                <span class="power-up multi"></span> Multi-Ball
+            </p>
+        </div>
+        
+        <div id="startScreen">
+            <div class="screen-content">
+                <h2>3D BRICK BREAKER</h2>
+                <p>Welcome to the ultimate 3D brick breaking experience!</p>
+                <p>Break all the bricks without letting the ball fall.</p>
+                <p>Collect power-ups to enhance your abilities.</p>
+                <p>Ready to test your skills?</p>
+                <button id="startButton">START GAME</button>
+            </div>
+        </div>
+        
+        <div id="gameOverScreen">
+            <div class="screen-content">
+                <h2 id="gameOverTitle">GAME OVER</h2>
+                <p>Your final score: <span id="finalScore" class="highlight">0</span></p>
+                <p>You reached level: <span id="finalLevel" class="highlight">1</span></p>
+                <button id="restartButton">PLAY AGAIN</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Game variables
+        let scene, camera, renderer;
+        let paddle, ball, bricks = [];
+        let directionalLight, pointLight;
+        let particles = [];
+        let powerUps = [];
+        
+        // Game state
+        let score = 0;
+        let lives = 3;
+        let level = 1;
+        let balls = 1;
+        let paddleSize = 1.0;
+        let ballSpeed = 0.15;
+        let gameStarted = false;
+        let gameOver = false;
+        
+        // Physics
+        let ballVelocity = { x: 0, y: 0, z: 0 };
+        
+        // Initialize the game
+        function init() {
+            // Create scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a2a);
+            
+            // Create camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 5, 15);
+            camera.lookAt(0, 0, 0);
+            
+            // Create renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.getElementById('gameContainer').appendChild(renderer.domElement);
+            
+            // Add lights
+            directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(5, 10, 7);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+            
+            pointLight = new THREE.PointLight(0x4cc9f0, 1, 100);
+            pointLight.position.set(0, 10, 0);
+            scene.add(pointLight);
+            
+            // Add ambient light
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+            scene.add(ambientLight);
+            
+            // Create game elements
+            createPaddle();
+            createBall();
+            createWalls();
+            createBricks();
+            
+            // Event listeners
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('mousemove', onMouseMove);
+            document.getElementById('startButton').addEventListener('click', startGame);
+            document.getElementById('restartButton').addEventListener('click', restartGame);
+            
+            // Start animation loop
+            animate();
+        }
+        
+        function createPaddle() {
+            const geometry = new THREE.BoxGeometry(4 * paddleSize, 0.5, 1);
+            const material = new THREE.MeshPhongMaterial({ 
+                color: 0x4361ee,
+                shininess: 100
+            });
+            paddle = new THREE.Mesh(geometry, material);
+            paddle.position.y = -8;
+            paddle.castShadow = true;
+            paddle.receiveShadow = true;
+            scene.add(paddle);
+        }
+        
+        function createBall() {
+            const geometry = new THREE.SphereGeometry(0.5, 32, 32);
+            const material = new THREE.MeshPhongMaterial({ 
+                color: 0xf72585,
+                shininess: 100,
+                emissive: 0x220000
+            });
+            ball = new THREE.Mesh(geometry, material);
+            ball.position.set(0, -7, 0);
+            ball.castShadow = true;
+            scene.add(ball);
+            
+            // Initial velocity
+            ballVelocity.x = (Math.random() - 0.5) * ballSpeed;
+            ballVelocity.y = ballSpeed;
+            ballVelocity.z = 0;
+        }
+        
+        function createWalls() {
+            // Floor (invisible, for game over detection)
+            const floorGeometry = new THREE.PlaneGeometry(30, 30);
+            const floorMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x000000,
+                visible: false
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -10;
+            scene.add(floor);
+            
+            // Walls
+            const wallMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x1a1a2e,
+                transparent: true,
+                opacity: 0.7
+            });
+            
+            // Left wall
+            const leftWall = new THREE.Mesh(new THREE.BoxGeometry(1, 20, 30), wallMaterial);
+            leftWall.position.set(-15.5, 0, 0);
+            scene.add(leftWall);
+            
+            // Right wall
+            const rightWall = new THREE.Mesh(new THREE.BoxGeometry(1, 20, 30), wallMaterial);
+            rightWall.position.set(15.5, 0, 0);
+            scene.add(rightWall);
+            
+            // Back wall
+            const backWall = new THREE.Mesh(new THREE.BoxGeometry(30, 20, 1), wallMaterial);
+            backWall.position.set(0, 0, -15.5);
+            scene.add(backWall);
+            
+            // Front wall (invisible, for ball bounce)
+            const frontWall = new THREE.Mesh(new THREE.BoxGeometry(30, 20, 1), wallMaterial);
+            frontWall.position.set(0, 0, 15.5);
+            scene.add(frontWall);
+            
+            // Ceiling
+            const ceiling = new THREE.Mesh(new THREE.BoxGeometry(30, 1, 30), wallMaterial);
+            ceiling.position.set(0, 10.5, 0);
+            scene.add(ceiling);
+        }
+        
+        function createBricks() {
+            // Clear existing bricks
+            bricks.forEach(brick => scene.remove(brick));
+            bricks = [];
+            
+            const colors = [0x4cc9f0, 0x4895ef, 0x4361ee, 0x3a0ca3, 0x7209b7];
+            const rows = 5;
+            const cols = 8;
+            
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const geometry = new THREE.BoxGeometry(3, 1, 1);
+                    const material = new THREE.MeshPhongMaterial({ 
+                        color: colors[row % colors.length],
+                        shininess: 80
+                    });
+                    
+                    const brick = new THREE.Mesh(geometry, material);
+                    brick.position.set(
+                        (col - cols/2 + 0.5) * 3.5,
+                        (row - rows/2 + 0.5) * 1.5 + 5,
+                        0
+                    );
+                    brick.castShadow = true;
+                    brick.receiveShadow = true;
+                    
+                    // Store brick info
+                    brick.userData = {
+                        health: level,
+                        row: row,
+                        col: col
+                    };
+                    
+                    scene.add(brick);
+                    bricks.push(brick);
+                }
+            }
+        }
+        
+        function createParticles(x, y, z, color) {
+            const particleCount = 20;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const geometry = new THREE.SphereGeometry(0.1, 8, 8);
+                const material = new THREE.MeshBasicMaterial({ color: color });
+                const particle = new THREE.Mesh(geometry, material);
+                
+                particle.position.set(x, y, z);
+                particle.userData = {
+                    velocity: new THREE.Vector3(
+                        (Math.random() - 0.5) * 0.3,
+                        (Math.random() - 0.5) * 0.3,
+                        (Math.random() - 0.5) * 0.3
+                    ),
+                    life: 1.0
+                };
+                
+                scene.add(particle);
+                particles.push(particle);
+            }
+        }
+        
+        function createPowerUp(x, y, z, type) {
+            const geometry = new THREE.SphereGeometry(0.4, 16, 16);
+            let color;
+            
+            switch(type) {
+                case 'paddle':
+                    color = 0x4cc9f0;
+                    break;
+                case 'ball':
+                    color = 0xf72585;
+                    break;
+                case 'multi':
+                    color = 0xb5179e;
+                    break;
+            }
+            
+            const material = new THREE.MeshPhongMaterial({ 
+                color: color,
+                emissive: color,
+                emissiveIntensity: 0.5
+            });
+            
+            const powerUp = new THREE.Mesh(geometry, material);
+            powerUp.position.set(x, y, z);
+            powerUp.userData = { type: type };
+            powerUp.castShadow = true;
+            
+            scene.add(powerUp);
+            powerUps.push(powerUp);
+        }
+        
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const particle = particles[i];
+                particle.userData.life -= 0.02;
+                
+                if (particle.userData.life <= 0) {
+                    scene.remove(particle);
+                    particles.splice(i, 1);
+                } else {
+                    particle.position.add(particle.userData.velocity);
+                    particle.material.opacity = particle.userData.life;
+                }
+            }
+        }
+        
+        function updatePowerUps() {
+            for (let i = powerUps.length - 1; i >= 0; i--) {
+                const powerUp = powerUps[i];
+                powerUp.position.y -= 0.05;
+                
+                // Rotate power-up
+                powerUp.rotation.x += 0.02;
+                powerUp.rotation.y += 0.03;
+                
+                // Check collision with paddle
+                if (powerUp.position.distanceTo(paddle.position) < 2.5 * paddleSize) {
+                    activatePowerUp(powerUp.userData.type);
+                    scene.remove(powerUp);
+                    powerUps.splice(i, 1);
+                }
+                
+                // Remove if fallen off
+                if (powerUp.position.y < -10) {
+                    scene.remove(powerUp);
+                    powerUps.splice(i, 1);
+                }
+            }
+        }
+        
+        function activatePowerUp(type) {
+            switch(type) {
+                case 'paddle':
+                    paddleSize = Math.min(1.5, paddleSize + 0.2);
+                    updatePaddleSize();
+                    document.getElementById('paddleSize').textContent = 'LARGE';
+                    break;
+                    
+                case 'ball':
+                    ballSpeed *= 1.2;
+                    document.getElementById('ballsValue').textContent = balls;
+                    break;
+                    
+                case 'multi':
+                    balls++;
+                    document.getElementById('ballsValue').textContent = balls;
+                    // In a full implementation, this would create additional balls
+                    break;
+            }
+            
+            // Reset power-up after some time
+            setTimeout(() => {
+                switch(type) {
+                    case 'paddle':
+                        paddleSize = 1.0;
+                        updatePaddleSize();
+                        document.getElementById('paddleSize').textContent = 'NORMAL';
+                        break;
+                        
+                    case 'ball':
+                        ballSpeed /= 1.2;
+                        break;
+                }
+            }, 10000);
+        }
+        
+        function updatePaddleSize() {
+            scene.remove(paddle);
+            createPaddle();
+        }
+        
+        function checkCollisions() {
+            // Ball collision with walls
+            if (ball.position.x <= -14.5 || ball.position.x >= 14.5) {
+                ballVelocity.x = -ballVelocity.x;
+                createParticles(ball.position.x, ball.position.y, ball.position.z, 0xf72585);
+            }
+            
+            if (ball.position.z <= -14.5 || ball.position.z >= 14.5) {
+                ballVelocity.z = -ballVelocity.z;
+                createParticles(ball.position.x, ball.position.y, ball.position.z, 0xf72585);
+            }
+            
+            if (ball.position.y >= 9.5) {
+                ballVelocity.y = -ballVelocity.y;
+                createParticles(ball.position.x, ball.position.y, ball.position.z, 0xf72585);
+            }
+            
+            // Ball collision with paddle
+            if (ball.position.y <= paddle.position.y + 0.75 && 
+                ball.position.y >= paddle.position.y - 0.75 &&
+                ball.position.x >= paddle.position.x - 2 * paddleSize &&
+                ball.position.x <= paddle.position.x + 2 * paddleSize &&
+                ball.position.z >= paddle.position.z - 0.5 &&
+                ball.position.z <= paddle.position.z + 0.5) {
+                
+                // Calculate bounce angle based on where the ball hit the paddle
+                const hitPos = (ball.position.x - paddle.position.x) / (2 * paddleSize);
+                ballVelocity.x = hitPos * ballSpeed;
+                ballVelocity.y = Math.abs(ballVelocity.y);
+                
+                createParticles(ball.position.x, ball.position.y, ball.position.z, 0x4361ee);
+            }
+            
+            // Ball collision with bricks
+            for (let i = bricks.length - 1; i >= 0; i--) {
+                const brick = bricks[i];
+                
+                if (ball.position.distanceTo(brick.position) < 2) {
+                    // Simple collision response
+                    const dx = ball.position.x - brick.position.x;
+                    const dy = ball.position.y - brick.position.y;
+                    
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        ballVelocity.x = -ballVelocity.x;
+                    } else {
+                        ballVelocity.y = -ballVelocity.y;
+                    }
+                    
+                    // Reduce brick health
+                    brick.userData.health--;
+                    
+                    if (brick.userData.health <= 0) {
+                        // Brick destroyed
+                        createParticles(brick.position.x, brick.position.y, brick.position.z, brick.material.color);
+                        
+                        // Chance to spawn power-up
+                        if (Math.random() < 0.2) {
+                            const types = ['paddle', 'ball', 'multi'];
+                            const type = types[Math.floor(Math.random() * types.length)];
+                            createPowerUp(brick.position.x, brick.position.y, brick.position.z, type);
+                        }
+                        
+                        scene.remove(brick);
+                        bricks.splice(i, 1);
+                        score += 10 * level;
+                        document.getElementById('scoreValue').textContent = score;
+                    } else {
+                        // Brick hit but not destroyed - change color to indicate damage
+                        brick.material.color.setHSL(brick.material.color.getHSL().h, 0.5, 0.5);
+                    }
+                    
+                    break;
+                }
+            }
+            
+            // Check if ball fell
+            if (ball.position.y < -9) {
+                lives--;
+                document.getElementById('livesValue').textContent = lives;
+                
+                if (lives <= 0) {
+                    endGame(false);
+                } else {
+                    resetBall();
+                }
+            }
+            
+            // Check if all bricks are destroyed
+            if (bricks.length === 0) {
+                level++;
+                document.getElementById('levelValue').textContent = level;
+                createBricks();
+                resetBall();
+            }
+        }
+        
+        function resetBall() {
+            ball.position.set(0, -7, 0);
+            ballVelocity.x = (Math.random() - 0.5) * ballSpeed;
+            ballVelocity.y = ballSpeed;
+            ballVelocity.z = 0;
+        }
+        
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        function onKeyDown(event) {
+            if (!gameStarted || gameOver) return;
+            
+            switch(event.key) {
+                case 'ArrowLeft':
+                    paddle.position.x = Math.max(-13, paddle.position.x - 1);
+                    break;
+                case 'ArrowRight':
+                    paddle.position.x = Math.min(13, paddle.position.x + 1);
+                    break;
+            }
+        }
+        
+        function onMouseMove(event) {
+            if (!gameStarted || gameOver) return;
+            
+            const mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+            paddle.position.x = mouseX * 13;
+        }
+        
+        function startGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            gameStarted = true;
+        }
+        
+        function endGame(isWin) {
+            gameOver = true;
+            document.getElementById('gameOverTitle').textContent = isWin ? 'YOU WIN!' : 'GAME OVER';
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('finalLevel').textContent = level;
+            document.getElementById('gameOverScreen').style.display = 'flex';
+        }
+        
+        function restartGame() {
+            // Reset game state
+            score = 0;
+            lives = 3;
+            level = 1;
+            balls = 1;
+            paddleSize = 1.0;
+            ballSpeed = 0.15;
+            gameStarted = true;
+            gameOver = false;
+            
+            // Update UI
+            document.getElementById('scoreValue').textContent = score;
+            document.getElementById('livesValue').textContent = lives;
+            document.getElementById('levelValue').textContent = level;
+            document.getElementById('ballsValue').textContent = balls;
+            document.getElementById('paddleSize').textContent = 'NORMAL';
+            
+            // Reset game elements
+            resetBall();
+            createBricks();
+            
+            // Clear power-ups and particles
+            powerUps.forEach(powerUp => scene.remove(powerUp));
+            powerUps = [];
+            particles.forEach(particle => scene.remove(particle));
+            particles = [];
+            
+            // Hide game over screen
+            document.getElementById('gameOverScreen').style.display = 'none';
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (gameStarted && !gameOver) {
+                // Update ball position
+                ball.position.x += ballVelocity.x;
+                ball.position.y += ballVelocity.y;
+                ball.position.z += ballVelocity.z;
+                
+                // Add some rotation to the ball
+                ball.rotation.x += 0.02;
+                ball.rotation.y += 0.03;
+                
+                // Update particles and power-ups
+                updateParticles();
+                updatePowerUps();
+                
+                // Check collisions
+                checkCollisions();
+                
+                // Animate point light
+                pointLight.position.x = Math.sin(Date.now() * 0.001) * 5;
+                pointLight.position.z = Math.cos(Date.now() * 0.001) * 5;
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Start the game
+        init();
+    </script>
+</body>
+</html>
