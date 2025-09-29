@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced 3D Brick Breaker</title>
+    <title>Advanced 3D Brick Breaker with Sound</title>
     <style>
         * {
             margin: 0;
@@ -155,10 +155,30 @@
             color: #f72585;
             font-weight: bold;
         }
+        
+        #soundToggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 1px solid rgba(76, 201, 240, 0.5);
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        #soundToggle:hover {
+            background: rgba(76, 201, 240, 0.3);
+        }
     </style>
 </head>
 <body>
     <div id="gameContainer">
+        <button id="soundToggle">🔊 Sound On</button>
+        
         <div id="ui">
             <h1>3D BRICK BREAKER</h1>
             <div class="stats">
@@ -220,9 +240,14 @@
         let ballSpeed = 0.15;
         let gameStarted = false;
         let gameOver = false;
+        let soundEnabled = true;
         
         // Physics
         let ballVelocity = { x: 0, y: 0, z: 0 };
+        
+        // Audio context and sounds
+        let audioContext;
+        let sounds = {};
         
         // Initialize the game
         function init() {
@@ -240,6 +265,9 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
             document.getElementById('gameContainer').appendChild(renderer.domElement);
+            
+            // Initialize audio
+            initAudio();
             
             // Add lights
             directionalLight = new THREE.DirectionalLight(0xffffff, 1);
@@ -267,9 +295,200 @@
             document.addEventListener('mousemove', onMouseMove);
             document.getElementById('startButton').addEventListener('click', startGame);
             document.getElementById('restartButton').addEventListener('click', restartGame);
+            document.getElementById('soundToggle').addEventListener('click', toggleSound);
             
             // Start animation loop
             animate();
+        }
+        
+        function initAudio() {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Create sound functions for different game events
+                sounds = {
+                    // Brick hit sound
+                    brickHit: function() {
+                        if (!soundEnabled) return;
+                        
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        
+                        oscillator.type = 'square';
+                        oscillator.frequency.setValueAtTime(300, audioContext.currentTime);
+                        oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.1);
+                        
+                        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                        
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.1);
+                    },
+                    
+                    // Brick break sound
+                    brickBreak: function() {
+                        if (!soundEnabled) return;
+                        
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        
+                        oscillator.type = 'sawtooth';
+                        oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+                        oscillator.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 0.2);
+                        
+                        gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                        
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.2);
+                    },
+                    
+                    // Paddle hit sound
+                    paddleHit: function() {
+                        if (!soundEnabled) return;
+                        
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        
+                        oscillator.type = 'sine';
+                        oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
+                        oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.1);
+                        
+                        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                        
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.1);
+                    },
+                    
+                    // Wall hit sound
+                    wallHit: function() {
+                        if (!soundEnabled) return;
+                        
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        
+                        oscillator.type = 'sine';
+                        oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+                        oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.1);
+                        
+                        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                        
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.1);
+                    },
+                    
+                    // Power-up collection sound
+                    powerUp: function() {
+                        if (!soundEnabled) return;
+                        
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        
+                        oscillator.type = 'sine';
+                        oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+                        oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+                        oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2); // G5
+                        
+                        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime + 0.1);
+                        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime + 0.2);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                        
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.3);
+                    },
+                    
+                    // Life lost sound
+                    lifeLost: function() {
+                        if (!soundEnabled) return;
+                        
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        
+                        oscillator.type = 'sawtooth';
+                        oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
+                        oscillator.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 0.5);
+                        
+                        gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                        
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.5);
+                    },
+                    
+                    // Level up sound
+                    levelUp: function() {
+                        if (!soundEnabled) return;
+                        
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        
+                        oscillator.type = 'sine';
+                        oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+                        oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+                        oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2); // G5
+                        oscillator.frequency.setValueAtTime(1046.50, audioContext.currentTime + 0.3); // C6
+                        
+                        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime + 0.1);
+                        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime + 0.2);
+                        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime + 0.3);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+                        
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.4);
+                    },
+                    
+                    // Game over sound
+                    gameOver: function() {
+                        if (!soundEnabled) return;
+                        
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        
+                        oscillator.type = 'sawtooth';
+                        oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+                        oscillator.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 1);
+                        
+                        gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
+                        
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 1);
+                    }
+                };
+                
+            } catch (e) {
+                console.log("Web Audio API is not supported in this browser");
+                soundEnabled = false;
+                document.getElementById('soundToggle').style.display = 'none';
+            }
         }
         
         function createPaddle() {
@@ -481,6 +700,8 @@
         }
         
         function activatePowerUp(type) {
+            sounds.powerUp();
+            
             switch(type) {
                 case 'paddle':
                     paddleSize = Math.min(1.5, paddleSize + 0.2);
@@ -496,7 +717,6 @@
                 case 'multi':
                     balls++;
                     document.getElementById('ballsValue').textContent = balls;
-                    // In a full implementation, this would create additional balls
                     break;
             }
             
@@ -526,16 +746,19 @@
             if (ball.position.x <= -14.5 || ball.position.x >= 14.5) {
                 ballVelocity.x = -ballVelocity.x;
                 createParticles(ball.position.x, ball.position.y, ball.position.z, 0xf72585);
+                sounds.wallHit();
             }
             
             if (ball.position.z <= -14.5 || ball.position.z >= 14.5) {
                 ballVelocity.z = -ballVelocity.z;
                 createParticles(ball.position.x, ball.position.y, ball.position.z, 0xf72585);
+                sounds.wallHit();
             }
             
             if (ball.position.y >= 9.5) {
                 ballVelocity.y = -ballVelocity.y;
                 createParticles(ball.position.x, ball.position.y, ball.position.z, 0xf72585);
+                sounds.wallHit();
             }
             
             // Ball collision with paddle
@@ -552,6 +775,7 @@
                 ballVelocity.y = Math.abs(ballVelocity.y);
                 
                 createParticles(ball.position.x, ball.position.y, ball.position.z, 0x4361ee);
+                sounds.paddleHit();
             }
             
             // Ball collision with bricks
@@ -575,6 +799,7 @@
                     if (brick.userData.health <= 0) {
                         // Brick destroyed
                         createParticles(brick.position.x, brick.position.y, brick.position.z, brick.material.color);
+                        sounds.brickBreak();
                         
                         // Chance to spawn power-up
                         if (Math.random() < 0.2) {
@@ -590,6 +815,7 @@
                     } else {
                         // Brick hit but not destroyed - change color to indicate damage
                         brick.material.color.setHSL(brick.material.color.getHSL().h, 0.5, 0.5);
+                        sounds.brickHit();
                     }
                     
                     break;
@@ -600,8 +826,10 @@
             if (ball.position.y < -9) {
                 lives--;
                 document.getElementById('livesValue').textContent = lives;
+                sounds.lifeLost();
                 
                 if (lives <= 0) {
+                    sounds.gameOver();
                     endGame(false);
                 } else {
                     resetBall();
@@ -612,6 +840,7 @@
             if (bricks.length === 0) {
                 level++;
                 document.getElementById('levelValue').textContent = level;
+                sounds.levelUp();
                 createBricks();
                 resetBall();
             }
@@ -648,6 +877,11 @@
             
             const mouseX = (event.clientX / window.innerWidth) * 2 - 1;
             paddle.position.x = mouseX * 13;
+        }
+        
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundToggle').textContent = soundEnabled ? '🔊 Sound On' : '🔇 Sound Off';
         }
         
         function startGame() {
